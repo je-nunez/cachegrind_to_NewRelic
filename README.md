@@ -23,3 +23,9 @@ and other profilers like the `cpuprofile` in the `gperftools` suite:
          http://gperftools.googlecode.com/svn/trunk/doc/cpuprofile.html
 
 Of course, all these programs can be instrumented with `New Relic` itself ( https://docs.newrelic.com/docs/agents ), which has a different logic (more transactional with embeddable sub-segments inside transactions, with the code determining which custom metrics and attributes to collect, name, and send to New Relic, etc).
+
+# WIP
+
+This project is a *work in progress*. The implementation is *incomplete* and
+subject to change. The documentation can be inaccurate.
+
