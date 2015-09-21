@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""Parse, summarize, and upload a Valgring callgrind file to New Relic."""
+"""
+Parse the grammar, summarize the syntactic tree, and upload a Valgring
+callgrind file to New Relic.
+"""
 
 # Just a first incrementally parsing some Valgrind callgrind file format
 # using the PLY module (the Natural Language Toolkit, NLTK, is also
@@ -33,9 +36,14 @@ import ply.yacc as yacc   # pylint: disable=unused-import
 #
 #     Name = Alpha (Digit | Alpha)*
 #
+#     CostPosition := "ob" | "fl" | "fi" | "fe" | "fn"
+#
+#     CalledPosition := " "cob" | "cfi" | "cfl" | "cfn"
+#
 
 
 class PlyLexerValgrindCallgrind(object):
+    # pylint: disable=too-many-public-methods
     """A class whose instantations will have the PLY lexer for the Valgrind
     Callgrind file format.
 
@@ -72,10 +80,15 @@ class PlyLexerValgrindCallgrind(object):
     #             'lex_rest_of_line'
 
     tokens = (
-        'lex_hex_number', 'lex_dec_number', 'lex_new_line',
+        'lex_equal_sign', 'lex_hex_number', 'lex_dec_number', 'lex_new_line',
         'lex_version', 'lex_creator', 'lex_target_command',
         'lex_target_id_pid', 'lex_target_id_thread', 'lex_target_id_part',
         'lex_description', 'lex_event_specification', 'lex_call_line_calls',
+        'lex_cost_line_def_events', 'lext_cost_position_ob',
+        'lext_cost_position_fl', 'lext_cost_position_fi',
+        'lext_cost_position_fe', 'lext_cost_position_fn',
+        'lex_called_position_cob', 'lex_called_position_cfi',
+        'lex_called_position_cfl', 'lex_called_position_cfn',
         'lex_name', 'lex_rest_of_line', 'lex_spacetab'
     )
 
@@ -83,8 +96,14 @@ class PlyLexerValgrindCallgrind(object):
     # We mostly define the PLY tokens not as PLY regular-expression objects,
     # but PLY functions, since the later give more flexibility
 
-    def t_lex_hex_number(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_equal_sign(self, lex_token):
+        r'='
+        # pylint: disable=no-self-use
+        return lex_token
+
+    def t_lex_hex_number(self, lex_token):
         r'0x[0-9A-Fa-f]+'
+        # pylint: disable=no-self-use
         try:
             lex_token.value = int(lex_token.value, 16)
         except ValueError:
@@ -92,8 +111,9 @@ class PlyLexerValgrindCallgrind(object):
             lex_token.value = 0
         return lex_token
 
-    def t_lex_dec_number(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_dec_number(self, lex_token):
         r'\d+'
+        # pylint: disable=no-self-use
         try:
             lex_token.value = int(lex_token.value)
         except ValueError:
@@ -101,52 +121,122 @@ class PlyLexerValgrindCallgrind(object):
             lex_token.value = 0
         return lex_token
 
-    def t_lex_new_line(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_new_line(self, lex_token):
         r'\n'
+        # pylint: disable=no-self-use
         lex_token.lexer.lineno += 1
 
-    def t_lex_version(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_version(self, lex_token):
         r'(?m)^[ \t]*version:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_creator(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_creator(self, lex_token):
         '(?m)^[ \t]*creator:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_target_command(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_target_command(self, lex_token):
         '(?m)^[ \t]*cmd:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_target_id_pid(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_target_id_pid(self, lex_token):
         '(?m)^[ \t]*pid:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_target_id_thread(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_target_id_thread(self, lex_token):
         '(?m)^[ \t]*thread:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_target_id_part(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_target_id_part(self, lex_token):
         '(?m)^[ \t]*part:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_description(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_description(self, lex_token):
         '(?m)^[ \t]*desc:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_event_specification(self, lex_token):  # pylint: disable=no-self-use
+    def t_lex_event_specification(self, lex_token):
         '(?m)^[ \t]*event:'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lex_call_line_calls(self, lex_token):  # pylint: disable=no-self-use
-        r'(?m)^[ \t]*calls='
+    def t_lex_call_line_calls(self, lex_token):
+        r'(?m)^[ \t]*calls'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_cost_line_def_events(self, lex_token):
+        r'(?m)^[ \t]*events:'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lext_cost_position_ob(self, lex_token):
+        r'(?m)^[ \t]*ob'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lext_cost_position_fl(self, lex_token):
+        r'(?m)^[ \t]*fl'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lext_cost_position_fi(self, lex_token):
+        r'(?m)^[ \t]*fi'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lext_cost_position_fe(self, lex_token):
+        r'(?m)^[ \t]*fe'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lext_cost_position_fn(self, lex_token):
+        r'(?m)^[ \t]*fn'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_called_position_cob(self, lex_token):
+        r'(?m)^[ \t]*cob'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_called_position_cfi(self, lex_token):
+        r'(?m)^[ \t]*cfi'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_called_position_cfl(self, lex_token):
+        r'(?m)^[ \t]*cfl'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_called_position_cfn(self, lex_token):
+        r'(?m)^[ \t]*cfn'
+        # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
