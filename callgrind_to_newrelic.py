@@ -84,9 +84,10 @@ class PlyLexerValgrindCallgrind(object):
         'lex_version', 'lex_creator', 'lex_target_command',
         'lex_target_id_pid', 'lex_target_id_thread', 'lex_target_id_part',
         'lex_description', 'lex_event_specification', 'lex_call_line_calls',
-        'lex_cost_line_def_events', 'lext_cost_position_ob',
-        'lext_cost_position_fl', 'lext_cost_position_fi',
-        'lext_cost_position_fe', 'lext_cost_position_fn',
+        'lex_cost_line_def_events', 'lex_cost_positions',
+        'lex_instr_token', 'lex_cost_position_ob',
+        'lex_cost_position_fl', 'lex_cost_position_fi',
+        'lex_cost_position_fe', 'lex_cost_position_fn',
         'lex_called_position_cob', 'lex_called_position_cfi',
         'lex_called_position_cfl', 'lex_called_position_cfn',
         'lex_name', 'lex_rest_of_line', 'lex_spacetab'
@@ -186,31 +187,42 @@ class PlyLexerValgrindCallgrind(object):
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lext_cost_position_ob(self, lex_token):
+    def t_lex_cost_positions(self, lex_token):
+        r'(?m)^[ \t]*positions:'
+        # pylint: disable=no-self-use
+        lex_token.value = lex_token.value.strip()
+        return lex_token
+
+    def t_lex_instr_token(self, lex_token):
+        r'\<instr\>'
+        # pylint: disable=no-self-use
+        return lex_token
+
+    def t_lex_cost_position_ob(self, lex_token):
         r'(?m)^[ \t]*ob'
         # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lext_cost_position_fl(self, lex_token):
+    def t_lex_cost_position_fl(self, lex_token):
         r'(?m)^[ \t]*fl'
         # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lext_cost_position_fi(self, lex_token):
+    def t_lex_cost_position_fi(self, lex_token):
         r'(?m)^[ \t]*fi'
         # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lext_cost_position_fe(self, lex_token):
+    def t_lex_cost_position_fe(self, lex_token):
         r'(?m)^[ \t]*fe'
         # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
         return lex_token
 
-    def t_lext_cost_position_fn(self, lex_token):
+    def t_lex_cost_position_fn(self, lex_token):
         r'(?m)^[ \t]*fn'
         # pylint: disable=no-self-use
         lex_token.value = lex_token.value.strip()
