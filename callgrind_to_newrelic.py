@@ -263,7 +263,7 @@ class PlyLexerValgrindCallgrind(object):
         return lex_token
 
     def t_lex_spacetab(self, dummy_token):  # pylint: disable=no-self-use
-        r'\s'
+        r'\s+'
         # Adding this function which allows the line-oriented nature of the
         # Callgrind, like:
         #    ^[ \t]*version: ... <line> ... '\n'
@@ -277,8 +277,68 @@ class PlyLexerValgrindCallgrind(object):
 
     def t_error(self, lex_token):  # pylint: disable=no-self-use
         # pylint: disable=missing-docstring
-        print "Illegal character '%s'" % lex_token.value[0]
+        sys.stderr.write("Illegal character '%s'\n" % lex_token.value[0])
         lex_token.lexer.skip(1)
+
+
+class PlyParserValgrindCallgrind(object):
+    # pylint: disable=too-many-public-methods
+    """A class whose instantations will have the PLY parser for the Valgrind
+    Callgrind file format.
+
+    This parser is being built incrementally, adding new grammatical rules
+    from the Callgrind grammar specification.
+    """
+
+    def __init__(self):
+        """Instance constructor"""
+        self.callgrind_lexer = PlyLexerValgrindCallgrind()
+
+        self.parser = yacc.yacc(module=self, lexer=self.callgrind_lexer.lexer,
+                                tracking=True)
+
+    def parse_strings(self, strings):
+        """parse strings"""
+
+        self.parser.error = 0
+        deriv = self.parser.parse(strings)
+        return deriv if not self.parser.error else None
+
+    def p_costs_number_space(self, pars_tree):  # pylint: disable=no-self-use
+        """"costs : lex_dec_number lex_spacetab
+                  | lex_hex_number lex_spacetab"""
+        pars_tree[0] = pars_tree[1]
+
+    def p_costs_costs_number_space(self, pars_tree):
+        # pylint: disable=no-self-use
+        """costs : costs lex_dec_number lex_spacetab
+                 | costs lex_hex_number lex_spacetab"""
+        if isinstance(pars_tree[1], list):
+            pars_tree[0] = pars_tree[1].apars_treepars_treeend(pars_tree[2])
+        else:
+            pars_tree[0] = [pars_tree[1], pars_tree[2]]
+
+    def p_error(self, pars_tree):   # pylint: disable=no-self-use
+        """An error in the parsing."""
+
+        from ply.lex import LexToken   # the PLY class for actual lexer tokens
+        if pars_tree:
+            pos_error = ""
+            try:
+                line_err = pars_tree.lineno(0)
+                lexpos_err = pars_tree.lexpos(0)
+                pos_error = " at line {} ({})".format(line_err, lexpos_err)
+            except AttributeError:
+                if isinstance(pars_tree, LexToken):
+                    # pars_tree is a lexical token.
+                    pos_error = " at line {} ({})".format(pars_tree.lineno,
+                                                          pars_tree.lexpos)
+
+            msg = "Syntax error at element {} {}\n".format(pars_tree.type,
+                                                           pos_error)
+            sys.stderr.write(msg)
+        else:
+            sys.stderr.write("Syntax error at EOF")
 
 
 def main():
