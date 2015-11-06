@@ -304,6 +304,18 @@ class PlyParserValgrindCallgrind(object):
         deriv = self.parser.parse(strings)
         return deriv if not self.parser.error else None
 
+    def p_format_version(self, pars_tree):  # pylint: disable=no-self-use
+        """"FormatVersion : lex_version lex_dec_number lex_new_line
+                          | lex_version lex_hex_number lex_new_line
+                    | lex_version lex_spacetab lex_dec_number lex_new_line
+                    | lex_version lex_spacetab lex_hex_number lex_new_line"""
+        # this needs new classes for the nodes, not simple Python lists.
+        # E.g., the classes can be the respective translation into the
+        # target language, ie., into New Relic. For example, the Callgrind
+        # FormatVersion can be translated to a New Relic string in its
+        # newrelic_init() call in the New Relic SDK
+        pars_tree[0] = [pars_tree[1], pars_tree[-2]]
+
     def p_costs_number_space(self, pars_tree):  # pylint: disable=no-self-use
         """"costs : lex_dec_number lex_spacetab
                   | lex_hex_number lex_spacetab"""
@@ -314,9 +326,35 @@ class PlyParserValgrindCallgrind(object):
         """costs : costs lex_dec_number lex_spacetab
                  | costs lex_hex_number lex_spacetab"""
         if isinstance(pars_tree[1], list):
-            pars_tree[0] = pars_tree[1].apars_treepars_treeend(pars_tree[2])
+            pars_tree[0] = pars_tree[1].append(pars_tree[2])
         else:
             pars_tree[0] = [pars_tree[1], pars_tree[2]]
+
+    def p_target_command_lex_rest_line(self, pars_tree):
+        # pylint: disable=no-self-use
+        """TargetCommand : lex_target_command lex_rest_of_line
+                         | lex_target_command lex_spacetab lex_rest_of_line"""
+        pars_tree[0] = [pars_tree[1],
+                        pars_tree[-1].strip()]  # take the last token
+
+    def p_target_id_pid_thread_part(self, pars_tree):
+        # pylint: disable=no-self-use
+        """TargetID : lex_target_id_pid lex_spacetab lex_dec_number
+                    | lex_target_id_pid lex_spacetab lex_hex_number
+                    | lex_target_id_pid lex_dec_number
+                    | lex_target_id_pid lex_hex_number
+                    | lex_target_id_thread lex_spacetab lex_dec_number
+                    | lex_target_id_thread lex_spacetab lex_hex_number
+                    | lex_target_id_thread lex_dec_number
+                    | lex_target_id_thread lex_hex_number
+                    | lex_target_id_part lex_spacetab lex_dec_number
+                    | lex_target_id_part lex_spacetab lex_hex_number
+                    | lex_target_id_part lex_dec_number
+                    | lex_target_id_part lex_hex_number"""
+        # this needs new classes for the nodes, not simple Python lists.
+        # E.g., the classes can be the respective translation into the
+        # target language, ie., into New Relic
+        pars_tree[0] = [pars_tree[1], pars_tree[-1]]
 
     def p_error(self, pars_tree):   # pylint: disable=no-self-use
         """An error in the parsing."""
