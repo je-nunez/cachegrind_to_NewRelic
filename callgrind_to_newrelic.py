@@ -80,17 +80,18 @@ class PlyLexerValgrindCallgrind(object):
     #             'lex_rest_of_line'
 
     tokens = (
-        'lex_equal_sign', 'lex_hex_number', 'lex_dec_number', 'lex_new_line',
-        'lex_version', 'lex_creator', 'lex_target_command',
-        'lex_target_id_pid', 'lex_target_id_thread', 'lex_target_id_part',
-        'lex_description', 'lex_event_specification', 'lex_call_line_calls',
-        'lex_cost_line_def_events', 'lex_cost_positions',
-        'lex_instr_token', 'lex_cost_position_ob',
-        'lex_cost_position_fl', 'lex_cost_position_fi',
-        'lex_cost_position_fe', 'lex_cost_position_fn',
-        'lex_called_position_cob', 'lex_called_position_cfi',
-        'lex_called_position_cfl', 'lex_called_position_cfn',
-        'lex_name', 'lex_rest_of_line', 'lex_spacetab'
+        'lex_equal_sign', 'lex_minus_sign', 'lex_plus_sign', 'lex_star_sign',
+        'lex_hex_number', 'lex_dec_number', 'lex_new_line', 'lex_version',
+        'lex_creator', 'lex_target_command', 'lex_target_id_pid',
+        'lex_target_id_thread', 'lex_target_id_part', 'lex_description',
+        'lex_event_specification', 'lex_call_line_calls',
+        'lex_cost_line_def_events', 'lex_cost_positions', 'lex_instr_token',
+        'lex_cost_position_ob', 'lex_cost_position_fl',
+        'lex_cost_position_fi', 'lex_cost_position_fe',
+        'lex_cost_position_fn', 'lex_called_position_cob',
+        'lex_called_position_cfi', 'lex_called_position_cfl',
+        'lex_called_position_cfn', 'lex_name', 'lex_rest_of_line',
+        'lex_spacetab'
     )
 
     # Tokens
@@ -99,6 +100,21 @@ class PlyLexerValgrindCallgrind(object):
 
     def t_lex_equal_sign(self, lex_token):
         r'='
+        # pylint: disable=no-self-use
+        return lex_token
+
+    def t_lex_minus_sign(self, lex_token):
+        r'-'
+        # pylint: disable=no-self-use
+        return lex_token
+
+    def t_lex_plus_sign(self, lex_token):
+        r'\+'
+        # pylint: disable=no-self-use
+        return lex_token
+
+    def t_lex_star_sign(self, lex_token):
+        r'\*'
         # pylint: disable=no-self-use
         return lex_token
 
@@ -305,7 +321,7 @@ class PlyParserValgrindCallgrind(object):
         return deriv if not self.parser.error else None
 
     def p_format_version(self, pars_tree):  # pylint: disable=no-self-use
-        """"FormatVersion : lex_version lex_dec_number lex_new_line
+        """FormatVersion : lex_version lex_dec_number lex_new_line
                           | lex_version lex_hex_number lex_new_line
                     | lex_version lex_spacetab lex_dec_number lex_new_line
                     | lex_version lex_spacetab lex_hex_number lex_new_line"""
@@ -315,6 +331,37 @@ class PlyParserValgrindCallgrind(object):
         # FormatVersion can be translated to a New Relic string in its
         # newrelic_init() call in the New Relic SDK
         pars_tree[0] = [pars_tree[1], pars_tree[-2]]
+
+    def p_creator_rest_of_line(self, pars_tree):
+        # pylint: disable=no-self-use
+        """Creator := lex_creator lex_rest_of_line"""
+        # same as above, that this needs new classes for the nodes, not
+        # simple Python lists.
+        creator_signature = pars_tree[-1].strip()
+        pars_tree[0] = [pars_tree[1], creator_signature]
+
+    def p_subposition_posit_number(self, pars_tree):
+        # pylint: disable=no-self-use
+        """SubPosition : lex_dec_number
+                       | lex_hex_number
+                       | lex_plus_sign lex_dec_number
+                       | lex_plus_sign lex_hex_number"""
+        pars_tree[0] = pars_tree[-1]
+
+    def p_subposition_negat_number(self, pars_tree):
+        # pylint: disable=no-self-use
+        """SubPosition : lex_minus_sign lex_dec_number
+                       | lex_minus_sign lex_hex_number"""
+        pars_tree[0] = - pars_tree[1]
+
+    def p_subposition_star_sign(self, pars_tree):
+        # pylint: disable=no-self-use
+        """SubPosition : t_lex_star_sign"""
+        # TODO: this needs to create a proper abstraction class,
+        #       'SubPosition', for the parser tree in Python PLY,
+        #       if not we will have problems distinguishing the other
+        #       SubPositions that are merely numeric
+        pars_tree[0] = pars_tree[1]
 
     def p_costs_number_space(self, pars_tree):  # pylint: disable=no-self-use
         """"costs : lex_dec_number lex_spacetab
@@ -355,6 +402,23 @@ class PlyParserValgrindCallgrind(object):
         # E.g., the classes can be the respective translation into the
         # target language, ie., into New Relic
         pars_tree[0] = [pars_tree[1], pars_tree[-1]]
+
+    def p_cost_position_alternatives(self, pars_tree):
+        # pylint: disable=no-self-use
+        """CostPosition : lex_cost_position_ob
+                        | lex_cost_position_fl
+                        | lex_cost_position_fi
+                        | lex_cost_position_fe
+                        | lex_cost_position_fn"""
+        pars_tree[0] = pars_tree[1]
+
+    def p_called_position_alternatives(self, pars_tree):
+        # pylint: disable=no-self-use
+        """CalledPosition : lex_called_position_cob
+                          | lex_called_position_cfi
+                          | lex_called_position_cfl
+                          | lex_called_position_cfn"""
+        pars_tree[0] = pars_tree[1]
 
     def p_error(self, pars_tree):   # pylint: disable=no-self-use
         """An error in the parsing."""
